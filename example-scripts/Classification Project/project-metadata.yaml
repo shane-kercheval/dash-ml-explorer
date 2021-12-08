@@ -1,0 +1,5 @@
+project:
+  name: Classification Example
+  descripton: This is the description.
+  type: classification
+  higher_score_is_better: True

@@ -1,0 +1,5 @@
+project:
+  name: Time-Series Example
+  descripton: This is the description.
+  type: time-series
+  higher_score_is_better: False
