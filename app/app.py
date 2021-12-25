@@ -96,7 +96,8 @@ def update_model_links(project_names_dropdown_value):
         raise PreventUpdate
 
     project_directory = os.path.join(PROJECTS_DIRECTORY, project_names_dropdown_value)
-    model_names = [name for name in os.listdir(project_directory) if os.path.isdir(os.path.join(project_directory, name))]
+    model_names = [name for name in os.listdir(project_directory)
+                   if os.path.isdir(os.path.join(project_directory, name))]
     model_names.sort()
     model_names = [LABEL__MODEL_SUMMARY_LINK] + model_names
     model_links_children = [
@@ -107,7 +108,9 @@ def update_model_links(project_names_dropdown_value):
         for x in model_names
     ]
 
-    new_address = urllib.parse.quote(os.path.join('/', project_names_dropdown_value, LABEL__MODEL_SUMMARY_LINK))
+    new_address = urllib.parse.quote(os.path.join('/',
+                                                  project_names_dropdown_value,
+                                                  LABEL__MODEL_SUMMARY_LINK))
 
     logging.debug(f"OUTPUT: model_names: {model_names}")
     logging.debug(f"OUTPUT: new_address: {new_address}")
