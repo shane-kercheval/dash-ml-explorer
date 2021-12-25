@@ -19,20 +19,20 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # styling the sidebar
 SIDEBAR_STYLE = {
-    "position": "fixed",
-    "top": 0,
-    "left": 0,
-    "bottom": 0,
-    "width": "16rem",
-    "padding": "2rem 1rem",
-    "background-color": "#f8f9fa",
+    'position': 'fixed',
+    'top': 0,
+    'left': 0,
+    'bottom': 0,
+    'width': '16rem',
+    'padding': '2rem 1rem',
+    'background-color': '#f8f9fa',
 }
 
 # padding for the page content
 CONTENT_STYLE = {
-    "margin-left": "18rem",
-    "margin-right": "2rem",
-    "padding": "2rem 1rem",
+    'margin-left': '18rem',
+    'margin-right': '2rem',
+    'padding': '2rem 1rem',
 }
 
 PROJECT_DIRECTORY = '../projects'
@@ -44,20 +44,16 @@ project_dropdowns = [{'label': x, 'value': x} for x in project_names]
 
 sidebar = html.Div(
     [
-        html.H2("ML Explorer", className="display-6"),
+        html.H2("ML Explorer", className='display-6'),
         html.Hr(),
-        html.P(
-            "Projects", className="lead"
-        ),
+        html.P("Projects", className='lead'),
         dcc.Dropdown(
             id='project_names_dropdown',
             options=project_dropdowns,
             value=project_dropdowns[0]['value']
         ),
         html.Hr(),
-        html.P(
-            "Models", className="lead"
-        ),
+        html.P("Models", className='lead'),
         dbc.Nav(
             id='model_links',
             vertical=True,
@@ -67,10 +63,10 @@ sidebar = html.Div(
     style=SIDEBAR_STYLE,
 )
 
-content = html.Div(id="page-content", children=[], style=CONTENT_STYLE)
+content = html.Div(id='page-content', children=[], style=CONTENT_STYLE)
 
 app.layout = html.Div([
-    dcc.Location(id="url", refresh=False),
+    dcc.Location(id='url', refresh=False),
     sidebar,
     content
 ])
@@ -82,7 +78,10 @@ app.layout = html.Div([
     Input('project_names_dropdown', 'value')
 )
 def update_model_links(project_names_dropdown_value):
-    logging.debug(f'INPUT: project_names_dropdown_value: {project_names_dropdown_value}')
+    """Updates the sidebar links to the models associated with the currently selected project. Also changes
+    the URL to the first/default link "Summary of Models"
+    """
+    logging.debug(f"INPUT: project_names_dropdown_value: {project_names_dropdown_value}")
 
     if project_names_dropdown_value is None:
         logging.warning("Not expecting `project_names_dropdown_value is None`")
@@ -91,7 +90,7 @@ def update_model_links(project_names_dropdown_value):
     model_names = [name for name in os.listdir(PROJECT_DIRECTORY_ + project_names_dropdown_value)
                       if os.path.isdir(PROJECT_DIRECTORY_ + project_names_dropdown_value + '/' + name)]
     model_names.sort()
-    model_names = ['Summary of Models'] + model_names
+    model_names = ["Summary of Models"] + model_names
     model_links_children = [
         dbc.NavLink(x,
                     href=urllib.parse.quote('/' + project_names_dropdown_value + '/' + x),
@@ -102,18 +101,18 @@ def update_model_links(project_names_dropdown_value):
 
     new_address = urllib.parse.quote('/' + project_names_dropdown_value + '/' + 'Summary of Models')
 
-    logging.debug(f'OUTPUT: model_names: {model_names}')
-    logging.debug(f'OUTPUT: new_address: {new_address}')
+    logging.debug(f"OUTPUT: model_names: {model_names}")
+    logging.debug(f"OUTPUT: new_address: {new_address}")
 
     return model_links_children, new_address
 
 
 @app.callback(
-    Output("page-content", "children"),
-    Input("url", "pathname")
+    Output('page-content', 'children'),
+    Input('url', 'pathname')
 )
 def render_page_content(path_name):
-    logging.debug(f'INPUT: path_name: {path_name}')
+    logging.debug(f"INPUT: path_name: {path_name}")
 
     path_name = urllib.parse.unquote(path_name)
     paths = path_name.split('/')
