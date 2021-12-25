@@ -237,7 +237,39 @@ def render_page_content(path_name):
                         "<br>Parameters: %{customdata[0]}",
                     ])
                 )
-                children = [dcc.Graph(id='asdf', figure=fig)]
+
+                #scatter_trend_line = 'ols'
+                scatter_trend_line = 'lowess'
+                #feature_color = 'encoder'
+                feature_color = 'scaler'
+                fig2 = px.scatter(
+                    data_frame=score_df,
+                    x='max_features',
+                    y=parser.primary_score_name + " Mean",
+                    size='n_estimators',
+                    color=feature_color,
+                    title='max_features',
+                    trendline=scatter_trend_line,
+                    #labels={'x': 'Iteration'},
+                    custom_data=['labels'],
+                    height=600,
+                    width=600*hlp.plot.GOLDEN_RATIO
+                )
+
+                fig2.update_traces(
+                    hovertemplate="<br>".join([
+                        "Iteration: %{x}",
+                        "roc_auc Mean: %{y}",
+                        "<br>Parameters: %{customdata[0]}",
+                    ])
+                )
+
+                children = [
+                    dcc.Graph(id='asdf', figure=fig),
+                    dcc.Graph(id='asdf2', figure=fig2),
+                    dash_dangerously_set_inner_html.DangerouslySetInnerHTML(parser.to_formatted_dataframe().render())
+
+                ]
             tabs = tabs + [dcc.Tab(label=name, children=children)]
 
                 
