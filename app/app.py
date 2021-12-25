@@ -51,7 +51,7 @@ sidebar = html.Div(
             "Models", className="lead"
         ),
         dbc.Nav(
-            id='project_links',
+            id='model_links',
             vertical=True,
             pills=True,
         ),
@@ -69,29 +69,40 @@ app.layout = html.Div([
 
 
 @app.callback(
-    Output('project_links', 'children'),
+    Output('model_links', 'children'),
     Input('project_names_dropdown', 'value')
 )
-def update_project_links(project_names_dropdown_value):
-    run_file_names = [name for name in os.listdir(PROJECT_DIRECTORY_ + project_names_dropdown_value)
+def update_model_links(project_names_dropdown_value):
+    model_names = [name for name in os.listdir(PROJECT_DIRECTORY_ + project_names_dropdown_value)
                       if os.path.isdir(PROJECT_DIRECTORY_ + project_names_dropdown_value + '/' + name)]
-    run_file_names.sort()
-    project_links_children = [
+    model_names.sort()
+    model_names = ['Summary of Models'] + model_names
+    model_links_children = [
         dbc.NavLink(x,
                     href=urllib.parse.quote('/' + project_names_dropdown_value + '/' + x),
                     active='exact')
-        for x in run_file_names
+        for x in model_names
     ]
 
-    return project_links_children
+    return model_links_children
 
 
 @app.callback(
     Output("page-content", "children"),
     [Input("url", "pathname")]
 )
-def render_page_content(pathname):
-    # if pathname == "/":
+def render_page_content(path_name):
+    path_name = urllib.parse.unquote(path_name)
+    paths = path_name.split('/')
+    paths.remove('')
+    current_project = paths[0]
+    current_model = paths[1]
+    current_content = [
+        html.H2(f"{current_project} | {current_model}"),
+        html.Hr()
+    ]
+
+    # if path_name == "/":
     #     return [
     #             html.H1('asdf',
     #                     style={'textAlign':'center'}),
@@ -99,12 +110,11 @@ def render_page_content(pathname):
     #                      figure=px.bar(df, barmode='group', x='asdf',
     #                      y=['asdf', 'asdf']))
     #             ]
-    # elif pathname == "/page-1":
+    # elif path_name == "/page-1":
 
-    return [
-            html.H1("404: Not found", className="text-danger"),
-            html.Hr(),
-            html.P(f"The pathname `{pathname}` was not found.")
+    return current_content + [
+            html.H3("404: Not found", className="text-danger"),
+            html.P(f"The url path `{path_name}` was not found.")
         ]
 
 
