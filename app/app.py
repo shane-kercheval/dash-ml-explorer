@@ -2,9 +2,7 @@ import os
 import urllib.parse
 import logging
 import pandas as pd
-import yaml
-from os.path import exists, isfile, join
-from os import listdir
+import os
 
 import dash
 import dash_bootstrap_components as dbc
@@ -16,6 +14,8 @@ from dash.exceptions import PreventUpdate
 import dash_dangerously_set_inner_html
 
 import helpsk as hlp
+
+from helper_functions import *
 
 logging.basicConfig(
     format='[%(asctime)s %(levelname)-8s-%(funcName)30s()] %(message)s',
@@ -115,13 +115,6 @@ def update_model_links(project_names_dropdown_value):
     return model_links_children, new_address
 
 
-
-def read_yaml(file_name) -> dict:
-    with open(file_name, "r") as stream:
-        yaml_dict = yaml.safe_load(stream)
-
-    return yaml_dict
-
 @app.callback(
     Output('page-content', 'children'),
     Input('url', 'pathname')
@@ -153,7 +146,7 @@ def render_page_content(path_name):
     if current_model == LABEL__MODEL_SUMMARY_LINK:
 
         metadata_dict = None
-        if exists(metadata_file_name):
+        if os.path.exists(metadata_file_name):
 
             metadata_dict = read_yaml(metadata_file_name)
             metadata_dict = metadata_dict['project']
@@ -179,11 +172,12 @@ def render_page_content(path_name):
                 html.H4("File Not Found: project-metadata.yaml", className="text-danger"),
             ]
 
+        # noinspection PyTypeChecker
         return current_content + [
             html.Div([
                 dcc.Tabs([
                     dcc.Tab(label='Tab one', children=[
-                        #dash_dangerously_set_inner_html.DangerouslySetInnerHTML(parser.to_formatted_dataframe().render())
+                        # dash_dangerously_set_inner_html.DangerouslySetInnerHTML(parser.to_formatted_dataframe().render())
                         
                         # dcc.Graph(
                         #     figure={
@@ -201,16 +195,15 @@ def render_page_content(path_name):
             ])
         ]
     else:
-        yaml_files = [f for f in listdir(CURRENT_MODEL_DIRECTORY)
-                      if isfile(join(CURRENT_MODEL_DIRECTORY, f)) and f.endswith('.yaml')]
+        yaml_files = [f for f in os.listdir(CURRENT_MODEL_DIRECTORY)
+                      if os.path.isfile(os.path.join(CURRENT_MODEL_DIRECTORY, f)) and f.endswith('.yaml')]
 
         logging.debug(f"yaml_files: {yaml_files}")
-        
+
+        # noinspection PyTypeChecker
         return current_content + [
             html.P(yaml_files)
         ]
-
-
 
     # noinspection PyTypeChecker
     return current_content + [
