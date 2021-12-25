@@ -17,6 +17,9 @@ import helpsk as hlp
 
 from helper_functions import *
 
+PROJECTS_DIRECTORY = '../projects'
+LABEL__MODEL_SUMMARY_LINK = "Summary"
+
 logging.basicConfig(
     format='[%(asctime)s %(levelname)-8s-%(funcName)30s()] %(message)s',
     level=logging.DEBUG,
@@ -41,9 +44,6 @@ CONTENT_STYLE = {
     'margin-right': '2rem',
     'padding': '2rem 1rem',
 }
-
-PROJECTS_DIRECTORY = '../projects'
-LABEL__MODEL_SUMMARY_LINK = "Summary"
 
 project_names = [name for name in os.listdir(PROJECTS_DIRECTORY)
                  if os.path.isdir(os.path.join(PROJECTS_DIRECTORY, name))]
