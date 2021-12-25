@@ -2,6 +2,7 @@ import os
 import urllib.parse
 import logging
 import pandas as pd
+import numpy as np
 import os
 
 import dash
@@ -12,6 +13,8 @@ from dash import dash_table
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_dangerously_set_inner_html
+
+import plotly.express as px
 
 import helpsk as hlp
 
@@ -178,21 +181,22 @@ def render_page_content(path_name):
         return current_content + [
             html.Div([
                 dcc.Tabs([
+                    
+                    dcc.Tab(label='About', children=about_content),
                     dcc.Tab(label='Tab one', children=[
                         # dash_dangerously_set_inner_html.DangerouslySetInnerHTML(parser.to_formatted_dataframe().render())
                         
-                        # dcc.Graph(
-                        #     figure={
-                        #         'data': [
-                        #             {'x': [1, 2, 3], 'y': [4, 1, 2],
-                        #                 'type': 'bar', 'name': 'SF'},
-                        #             {'x': [1, 2, 3], 'y': [2, 4, 5],
-                        #              'type': 'bar', 'name': u'Montréal'},
-                        #         ]
-                        #     }
-                        # )
+                        dcc.Graph(
+                            figure={
+                                'data': [
+                                    {'x': [1, 2, 3], 'y': [4, 1, 2],
+                                        'type': 'bar', 'name': 'SF'},
+                                    {'x': [1, 2, 3], 'y': [2, 4, 5],
+                                     'type': 'bar', 'name': u'Montréal'},
+                                ]
+                            }
+                        )
                     ]),
-                    dcc.Tab(label='About', children=about_content),
                 ])
             ])
         ]
@@ -202,9 +206,47 @@ def render_page_content(path_name):
 
         logging.debug(f"yaml_files: {yaml_files}")
 
+        tabs = []
         # noinspection PyTypeChecker
+        for yaml_file in yaml_files:
+            name = yaml_file.split('.')[0]
+
+            if name == 'Final Model':
+                children = []
+            else:
+                parser = hlp.sklearn_eval.SearchCVParser.from_yaml_file(yaml_file_name = os.path.join(CURRENT_PROJECT_DIRECTORY, current_model, yaml_file))
+                score_df = parser.to_dataframe(sort_by_score=False)
+                score_df['labels'] = [x.replace('{', '<br>').replace(', ', '<br>').replace('}', '')
+                              for x in parser.iteration_labels(order_from_best_to_worst=False)]
+
+                fig = px.scatter(
+                    data_frame=score_df,
+                    x=np.arange(0, parser.number_of_iterations),
+                    y=parser.primary_score_name + " Mean",
+                    title='Average Cross-Validation Score across all iterations',
+                    trendline='lowess',
+                    labels={'x': 'Iteration'},
+                    custom_data=['labels'],
+                    height=600,
+                    width=600*hlp.plot.GOLDEN_RATIO
+                )
+                fig.update_traces(
+                    hovertemplate="<br>".join([
+                        "Iteration: %{x}",
+                        "roc_auc Mean: %{y}",
+                        "<br>Parameters: %{customdata[0]}",
+                    ])
+                )
+                children = [dcc.Graph(id='asdf', figure=fig)]
+            tabs = tabs + [dcc.Tab(label=name, children=children)]
+
+                
+
         return current_content + [
-            html.P(yaml_files)
+            #html.P(yaml_files)
+            dcc.Loading(children=html.Div([
+                dcc.Tabs(tabs)
+            ]))
         ]
 
     # noinspection PyTypeChecker
