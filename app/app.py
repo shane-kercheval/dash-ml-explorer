@@ -1,14 +1,21 @@
 import os
 import urllib.parse
 import logging
+import pandas as pd
+import yaml
+from os.path import exists, isfile, join
+from os import listdir
 
 import dash
 import dash_bootstrap_components as dbc
 from dash import dcc
 from dash import html
+from dash import dash_table
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
+import dash_dangerously_set_inner_html
 
+import helpsk as hlp
 
 logging.basicConfig(
     format='[%(asctime)s %(levelname)-8s-%(funcName)30s()] %(message)s',
@@ -37,6 +44,7 @@ CONTENT_STYLE = {
 
 PROJECT_DIRECTORY = '../projects'
 PROJECT_DIRECTORY_ = PROJECT_DIRECTORY + '/'
+LABEL__MODEL_SUMMARY_LINK = "Summary"
 
 project_names = [name for name in os.listdir(PROJECT_DIRECTORY) if os.path.isdir(PROJECT_DIRECTORY_ + name)]
 project_names.sort()
@@ -90,7 +98,7 @@ def update_model_links(project_names_dropdown_value):
     model_names = [name for name in os.listdir(PROJECT_DIRECTORY_ + project_names_dropdown_value)
                       if os.path.isdir(PROJECT_DIRECTORY_ + project_names_dropdown_value + '/' + name)]
     model_names.sort()
-    model_names = ["Summary of Models"] + model_names
+    model_names = [LABEL__MODEL_SUMMARY_LINK] + model_names
     model_links_children = [
         dbc.NavLink(x,
                     href=urllib.parse.quote('/' + project_names_dropdown_value + '/' + x),
@@ -99,13 +107,20 @@ def update_model_links(project_names_dropdown_value):
         for x in model_names
     ]
 
-    new_address = urllib.parse.quote('/' + project_names_dropdown_value + '/' + 'Summary of Models')
+    new_address = urllib.parse.quote('/' + project_names_dropdown_value + '/' + LABEL__MODEL_SUMMARY_LINK)
 
     logging.debug(f"OUTPUT: model_names: {model_names}")
     logging.debug(f"OUTPUT: new_address: {new_address}")
 
     return model_links_children, new_address
 
+
+
+def read_yaml(file_name) -> dict:
+    with open(file_name, "r") as stream:
+        yaml_dict = yaml.safe_load(stream)
+
+    return yaml_dict
 
 @app.callback(
     Output('page-content', 'children'),
@@ -124,15 +139,78 @@ def render_page_content(path_name):
         html.Hr()
     ]
 
-    # if path_name == "/":
-    #     return [
-    #             html.H1('asdf',
-    #                     style={'textAlign':'center'}),
-    #             dcc.Graph(id='asdf',
-    #                      figure=px.bar(df, barmode='group', x='asdf',
-    #                      y=['asdf', 'asdf']))
-    #             ]
-    # elif path_name == "/page-1":
+    CURRENT_PROJECT_DIRECTORY = PROJECT_DIRECTORY_ + current_project
+    CURRENT_MODEL_DIRECTORY = CURRENT_PROJECT_DIRECTORY + '/' + current_model
+    logging.debug(f"CURRENT_MODEL_DIRECTORY: {CURRENT_MODEL_DIRECTORY}")
+
+    #temp_file = CURRENT_PROJECT_DIRECTORY + "/Random Forest/Run 1 - Random Forest - BayesSearchCV.yaml"
+    #parser = hlp.sklearn_eval.SearchCVParser.from_yaml_file(yaml_file_name = temp_file)
+    #dash_dangerously_set_inner_html.DangerouslySetInnerHTML(parser.to_formatted_dataframe().render())
+
+
+    metadata_file_name = CURRENT_PROJECT_DIRECTORY + '/project-metadata.yaml'
+
+    if current_model == LABEL__MODEL_SUMMARY_LINK:
+
+        metadata_dict = None
+        if exists(metadata_file_name):
+
+            metadata_dict = read_yaml(metadata_file_name)
+            metadata_dict = metadata_dict['project']
+            
+            df = pd.DataFrame.from_dict(metadata_dict,orient='index')
+            df = df.reset_index()
+            df.columns=['name', 'values']
+
+            about_content = [
+                html.Br(),
+                html.B(html.Div('project-metadata.yaml:')),
+                dash_table.DataTable(
+                            id='table',
+                            columns=[{"name": i, "id": i} for i in df.columns],
+                            data=df.to_dict('records'),
+                            style_header = {'display': 'none'},
+                            style_cell={'textAlign': 'left'},
+                )
+            ]
+        else:
+            about_content = [
+                html.Br(),
+                html.H4("File Not Found: project-metadata.yaml", className="text-danger"),
+            ]
+
+        return current_content + [
+            html.Div([
+                dcc.Tabs([
+                    dcc.Tab(label='Tab one', children=[
+                        #dash_dangerously_set_inner_html.DangerouslySetInnerHTML(parser.to_formatted_dataframe().render())
+                        
+                        # dcc.Graph(
+                        #     figure={
+                        #         'data': [
+                        #             {'x': [1, 2, 3], 'y': [4, 1, 2],
+                        #                 'type': 'bar', 'name': 'SF'},
+                        #             {'x': [1, 2, 3], 'y': [2, 4, 5],
+                        #              'type': 'bar', 'name': u'Montréal'},
+                        #         ]
+                        #     }
+                        # )
+                    ]),
+                    dcc.Tab(label='About', children=about_content),
+                ])
+            ])
+        ]
+    else:
+        yaml_files = [f for f in listdir(CURRENT_MODEL_DIRECTORY)
+                      if isfile(join(CURRENT_MODEL_DIRECTORY, f)) and f.endswith('.yaml')]
+
+        logging.debug(f"yaml_files: {yaml_files}")
+        
+        return current_content + [
+            html.P(yaml_files)
+        ]
+
+
 
     # noinspection PyTypeChecker
     return current_content + [
