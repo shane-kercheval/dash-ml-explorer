@@ -16,9 +16,6 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-#log = logging.getLogger(__name__)
-# remove last handler. The one added by dash: https://github.com/plotly/dash/issues/756
-#log.handlers.pop()
 
 # styling the sidebar
 SIDEBAR_STYLE = {
@@ -108,7 +105,6 @@ def update_model_links(project_names_dropdown_value):
     logging.debug(f'OUTPUT: model_names: {model_names}')
     logging.debug(f'OUTPUT: new_address: {new_address}')
 
-
     return model_links_children, new_address
 
 
@@ -139,6 +135,7 @@ def render_page_content(path_name):
     #             ]
     # elif path_name == "/page-1":
 
+    # noinspection PyTypeChecker
     return current_content + [
             html.H3("404: Not found", className="text-danger"),
             html.P(f"The url path `{path_name}` was not found.")
