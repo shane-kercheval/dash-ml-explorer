@@ -1,13 +1,24 @@
 import os
 import urllib.parse
+import logging
 
 import dash
 import dash_bootstrap_components as dbc
 from dash import dcc
 from dash import html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 
+
+logging.basicConfig(
+    format='[%(asctime)s %(levelname)-8s-%(funcName)30s()] %(message)s',
+    level=logging.DEBUG,
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+#log = logging.getLogger(__name__)
+# remove last handler. The one added by dash: https://github.com/plotly/dash/issues/756
+#log.handlers.pop()
 
 # styling the sidebar
 SIDEBAR_STYLE = {
@@ -62,7 +73,7 @@ sidebar = html.Div(
 content = html.Div(id="page-content", children=[], style=CONTENT_STYLE)
 
 app.layout = html.Div([
-    dcc.Location(id="url"),
+    dcc.Location(id="url", refresh=False),
     sidebar,
     content
 ])
@@ -70,9 +81,16 @@ app.layout = html.Div([
 
 @app.callback(
     Output('model_links', 'children'),
+    Output('url', 'pathname'),
     Input('project_names_dropdown', 'value')
 )
 def update_model_links(project_names_dropdown_value):
+    logging.debug(f'INPUT: project_names_dropdown_value: {project_names_dropdown_value}')
+
+    if project_names_dropdown_value is None:
+        logging.warning("Not expecting `project_names_dropdown_value is None`")
+        raise PreventUpdate
+
     model_names = [name for name in os.listdir(PROJECT_DIRECTORY_ + project_names_dropdown_value)
                       if os.path.isdir(PROJECT_DIRECTORY_ + project_names_dropdown_value + '/' + name)]
     model_names.sort()
@@ -80,18 +98,27 @@ def update_model_links(project_names_dropdown_value):
     model_links_children = [
         dbc.NavLink(x,
                     href=urllib.parse.quote('/' + project_names_dropdown_value + '/' + x),
+                    external_link=False,
                     active='exact')
         for x in model_names
     ]
 
-    return model_links_children
+    new_address = urllib.parse.quote('/' + project_names_dropdown_value + '/' + 'Summary of Models')
+
+    logging.debug(f'OUTPUT: model_names: {model_names}')
+    logging.debug(f'OUTPUT: new_address: {new_address}')
+
+
+    return model_links_children, new_address
 
 
 @app.callback(
     Output("page-content", "children"),
-    [Input("url", "pathname")]
+    Input("url", "pathname")
 )
 def render_page_content(path_name):
+    logging.debug(f'INPUT: path_name: {path_name}')
+
     path_name = urllib.parse.unquote(path_name)
     paths = path_name.split('/')
     paths.remove('')
