@@ -42,11 +42,11 @@ CONTENT_STYLE = {
     'padding': '2rem 1rem',
 }
 
-PROJECT_DIRECTORY = '../projects'
-PROJECT_DIRECTORY_ = PROJECT_DIRECTORY + '/'
+PROJECTS_DIRECTORY = '../projects'
 LABEL__MODEL_SUMMARY_LINK = "Summary"
 
-project_names = [name for name in os.listdir(PROJECT_DIRECTORY) if os.path.isdir(PROJECT_DIRECTORY_ + name)]
+project_names = [name for name in os.listdir(PROJECTS_DIRECTORY)
+                 if os.path.isdir(os.path.join(PROJECTS_DIRECTORY, name))]
 project_names.sort()
 project_dropdowns = [{'label': x, 'value': x} for x in project_names]
 
@@ -95,19 +95,19 @@ def update_model_links(project_names_dropdown_value):
         logging.warning("Not expecting `project_names_dropdown_value is None`")
         raise PreventUpdate
 
-    model_names = [name for name in os.listdir(PROJECT_DIRECTORY_ + project_names_dropdown_value)
-                      if os.path.isdir(PROJECT_DIRECTORY_ + project_names_dropdown_value + '/' + name)]
+    project_directory = os.path.join(PROJECTS_DIRECTORY, project_names_dropdown_value)
+    model_names = [name for name in os.listdir(project_directory) if os.path.isdir(os.path.join(project_directory, name))]
     model_names.sort()
     model_names = [LABEL__MODEL_SUMMARY_LINK] + model_names
     model_links_children = [
         dbc.NavLink(x,
-                    href=urllib.parse.quote('/' + project_names_dropdown_value + '/' + x),
+                    href=urllib.parse.quote(os.path.join('/', project_names_dropdown_value, x)),
                     external_link=False,
                     active='exact')
         for x in model_names
     ]
 
-    new_address = urllib.parse.quote('/' + project_names_dropdown_value + '/' + LABEL__MODEL_SUMMARY_LINK)
+    new_address = urllib.parse.quote(os.path.join('/', project_names_dropdown_value, LABEL__MODEL_SUMMARY_LINK))
 
     logging.debug(f"OUTPUT: model_names: {model_names}")
     logging.debug(f"OUTPUT: new_address: {new_address}")
@@ -132,14 +132,13 @@ def render_page_content(path_name):
         html.Hr()
     ]
 
-    CURRENT_PROJECT_DIRECTORY = PROJECT_DIRECTORY_ + current_project
+    CURRENT_PROJECT_DIRECTORY = os.path.join(PROJECTS_DIRECTORY, current_project)
     CURRENT_MODEL_DIRECTORY = CURRENT_PROJECT_DIRECTORY + '/' + current_model
     logging.debug(f"CURRENT_MODEL_DIRECTORY: {CURRENT_MODEL_DIRECTORY}")
 
     #temp_file = CURRENT_PROJECT_DIRECTORY + "/Random Forest/Run 1 - Random Forest - BayesSearchCV.yaml"
     #parser = hlp.sklearn_eval.SearchCVParser.from_yaml_file(yaml_file_name = temp_file)
     #dash_dangerously_set_inner_html.DangerouslySetInnerHTML(parser.to_formatted_dataframe().render())
-
 
     metadata_file_name = CURRENT_PROJECT_DIRECTORY + '/project-metadata.yaml'
 
