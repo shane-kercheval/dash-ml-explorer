@@ -10,7 +10,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc
 from dash import html
 from dash import dash_table
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output, State, MATCH
 from dash.exceptions import PreventUpdate
 import dash_dangerously_set_inner_html
 
@@ -20,6 +20,7 @@ import helpsk as hlp
 
 from helper_functions import *
 
+
 PROJECTS_DIRECTORY = '../projects'
 LABEL__MODEL_SUMMARY_LINK = "Summary"
 
@@ -28,7 +29,9 @@ logging.basicConfig(
     level=logging.DEBUG,
     datefmt='%Y-%m-%d %H:%M:%S'
 )
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__,
+                external_stylesheets=[dbc.themes.BOOTSTRAP],
+                suppress_callback_exceptions=True)
 
 # styling the sidebar
 SIDEBAR_STYLE = {
@@ -203,6 +206,8 @@ def render_page_content(path_name):
     else:
         yaml_files = [f for f in os.listdir(CURRENT_MODEL_DIRECTORY)
                       if os.path.isfile(os.path.join(CURRENT_MODEL_DIRECTORY, f)) and f.endswith('.yaml')]
+        #yaml_files = yaml_files + ['Run 1.yaml']*10
+        yaml_files.sort(reverse=True)
 
         logging.debug(f"yaml_files: {yaml_files}")
 
@@ -211,73 +216,82 @@ def render_page_content(path_name):
         for yaml_file in yaml_files:
             name = yaml_file.split('.')[0]
 
-            if name == 'Final Model':
-                children = []
-            else:
-                parser = hlp.sklearn_eval.SearchCVParser.from_yaml_file(yaml_file_name = os.path.join(CURRENT_PROJECT_DIRECTORY, current_model, yaml_file))
-                score_df = parser.to_dataframe(sort_by_score=False)
-                score_df['labels'] = [x.replace('{', '<br>').replace(', ', '<br>').replace('}', '')
-                              for x in parser.iteration_labels(order_from_best_to_worst=False)]
+            # if name == 'Final Model':
+            #     children = []
+            # else:
+            #     parser = hlp.sklearn_eval.SearchCVParser.from_yaml_file(yaml_file_name = os.path.join(CURRENT_PROJECT_DIRECTORY, current_model, yaml_file))
+            #     score_df = parser.to_dataframe(sort_by_score=False)
+            #     score_df['labels'] = [x.replace('{', '<br>').replace(', ', '<br>').replace('}', '')
+            #                   for x in parser.iteration_labels(order_from_best_to_worst=False)]
 
-                fig = px.scatter(
-                    data_frame=score_df,
-                    x=np.arange(0, parser.number_of_iterations),
-                    y=parser.primary_score_name + " Mean",
-                    title='Average Cross-Validation Score across all iterations',
-                    trendline='lowess',
-                    labels={'x': 'Iteration'},
-                    custom_data=['labels'],
-                    height=600,
-                    width=600*hlp.plot.GOLDEN_RATIO
+            #     fig = px.scatter(
+            #         data_frame=score_df,
+            #         x=np.arange(0, parser.number_of_iterations),
+            #         y=parser.primary_score_name + " Mean",
+            #         title='Average Cross-Validation Score across all iterations',
+            #         trendline='lowess',
+            #         labels={'x': 'Iteration'},
+            #         custom_data=['labels'],
+            #         height=600,
+            #         width=600*hlp.plot.GOLDEN_RATIO
+            #     )
+            #     fig.update_traces(
+            #         hovertemplate="<br>".join([
+            #             "Iteration: %{x}",
+            #             "roc_auc Mean: %{y}",
+            #             "<br>Parameters: %{customdata[0]}",
+            #         ])
+            #     )
+
+            #     #scatter_trend_line = 'ols'
+            #     scatter_trend_line = 'lowess'
+            #     #feature_color = 'encoder'
+            #     feature_color = 'scaler'
+            #     fig2 = px.scatter(
+            #         data_frame=score_df,
+            #         x='max_features',
+            #         y=parser.primary_score_name + " Mean",
+            #         size='n_estimators',
+            #         color=feature_color,
+            #         title='max_features',
+            #         trendline=scatter_trend_line,
+            #         #labels={'x': 'Iteration'},
+            #         custom_data=['labels'],
+            #         height=600,
+            #         width=600*hlp.plot.GOLDEN_RATIO
+            #     )
+
+            #     fig2.update_traces(
+            #         hovertemplate="<br>".join([
+            #             "Iteration: %{x}",
+            #             "roc_auc Mean: %{y}",
+            #             "<br>Parameters: %{customdata[0]}",
+            #         ])
+            #     )
+
+            #     children = [
+            #         dcc.Graph(id='asdf', figure=fig),
+            #         dcc.Graph(id='asdf2', figure=fig2),
+            #         dash_dangerously_set_inner_html.DangerouslySetInnerHTML(parser.to_formatted_dataframe().render())
+
+            #     ]
+            tabs = tabs + [
+                dcc.Tab(
+                    id={
+                        'type': 'my-tab',
+                        'index': name
+                    },
+                    value=name,
+                    label=name
                 )
-                fig.update_traces(
-                    hovertemplate="<br>".join([
-                        "Iteration: %{x}",
-                        "roc_auc Mean: %{y}",
-                        "<br>Parameters: %{customdata[0]}",
-                    ])
-                )
-
-                #scatter_trend_line = 'ols'
-                scatter_trend_line = 'lowess'
-                #feature_color = 'encoder'
-                feature_color = 'scaler'
-                fig2 = px.scatter(
-                    data_frame=score_df,
-                    x='max_features',
-                    y=parser.primary_score_name + " Mean",
-                    size='n_estimators',
-                    color=feature_color,
-                    title='max_features',
-                    trendline=scatter_trend_line,
-                    #labels={'x': 'Iteration'},
-                    custom_data=['labels'],
-                    height=600,
-                    width=600*hlp.plot.GOLDEN_RATIO
-                )
-
-                fig2.update_traces(
-                    hovertemplate="<br>".join([
-                        "Iteration: %{x}",
-                        "roc_auc Mean: %{y}",
-                        "<br>Parameters: %{customdata[0]}",
-                    ])
-                )
-
-                children = [
-                    dcc.Graph(id='asdf', figure=fig),
-                    dcc.Graph(id='asdf2', figure=fig2),
-                    dash_dangerously_set_inner_html.DangerouslySetInnerHTML(parser.to_formatted_dataframe().render())
-
-                ]
-            tabs = tabs + [dcc.Tab(label=name, children=children)]
-
+            ]
                 
-
         return current_content + [
-            #html.P(yaml_files)
             dcc.Loading(children=html.Div([
-                dcc.Tabs(tabs)
+                dcc.Tabs(
+                    id='model_tabs',
+                    children=tabs,
+                    value=yaml_files[0].split('.')[0])
             ]))
         ]
 
@@ -288,5 +302,225 @@ def render_page_content(path_name):
         ]
 
 
+@app.callback(
+    Output({'type': 'my-tab', 'index': MATCH}, 'children'),
+    Input('model_tabs', 'value'),
+    State('url', 'pathname'),
+)
+def display_output(value, path_name):
+
+    # if value is None or value == 'tab-1':
+    #     raise PreventUpdate
+
+    print(value)
+    print(path_name)
+    path_name = urllib.parse.unquote(path_name)
+    paths = path_name.split('/')
+    paths.remove('')
+    current_project = paths[0]
+    current_model = paths[1]
+    current_content = [
+        html.H2(f"{current_project} | {current_model}"),
+        html.Hr()
+    ]
+
+    CURRENT_PROJECT_DIRECTORY = os.path.join(PROJECTS_DIRECTORY, current_project)
+    CURRENT_MODEL_DIRECTORY = CURRENT_PROJECT_DIRECTORY + '/' + current_model
+    logging.debug(f"CURRENT_MODEL_DIRECTORY: {CURRENT_MODEL_DIRECTORY}")
+
+
+    if value == 'Final Model':
+        children = []
+    else:
+        parser = hlp.sklearn_eval.SearchCVParser.from_yaml_file(yaml_file_name = os.path.join(CURRENT_PROJECT_DIRECTORY, current_model, value + '.yaml'))
+        #parser = hlp.sklearn_eval.SearchCVParser.from_yaml_file(yaml_file_name = os.path.join(CURRENT_PROJECT_DIRECTORY, current_model, 'Run 1' + '.yaml'))
+        score_df = parser.to_dataframe(sort_by_score=False)
+        score_df['labels'] = [x.replace('{', '<br>').replace(', ', '<br>').replace('}', '')
+                      for x in parser.iteration_labels(order_from_best_to_worst=False)]
+
+        fig = px.scatter(
+            data_frame=score_df,
+            x=np.arange(0, parser.number_of_iterations),
+            y=parser.primary_score_name + " Mean",
+            title='Average Cross-Validation Score across all iterations',
+            trendline='lowess',
+            labels={'x': 'Iteration'},
+            custom_data=['labels'],
+            height=600,
+            width=600*hlp.plot.GOLDEN_RATIO
+        )
+        fig.update_traces(
+            hovertemplate="<br>".join([
+                "Iteration: %{x}",
+                "roc_auc Mean: %{y}",
+                "<br>Parameters: %{customdata[0]}",
+            ])
+        )
+
+        children = [
+            dcc.Graph(id='asdf', figure=fig),
+            dbc.Row(
+                children=[
+                    dbc.Col(
+                        children=[
+                            html.Br(),html.Br(),
+                            dbc.Row([
+                                html.Label(
+                                    "X-Axis",
+                                    style={'font-weight': 'bold'}
+                                ),
+                                dcc.Dropdown(
+                                    id='model_graph_custom_variable_x',
+                                    options=[{'label':x, 'value':x} for x in parser.parameter_names],
+                                    value=parser.parameter_names[0]
+                                ),
+                            ], style={'margin-top': '50px'}),
+                            dbc.Row([
+                                html.Label(
+                                    "Color",
+                                    style={'font-weight': 'bold'}
+                                ),
+                                dcc.Dropdown(
+                                    id='model_graph_custom_variable_color',
+                                    options=[{'label':x, 'value':x} for x in parser.parameter_names],
+                                    value=None
+                                ),
+                            ]),
+                            dbc.Row([
+                                html.Label(
+                                    "Size",
+                                    style={'font-weight': 'bold'}
+                                ),
+                                dcc.Dropdown(
+                                    id='model_graph_custom_variable_size',
+                                    options=[{'label':x, 'value':x} for x in parser.parameter_names],
+                                    value=None
+                                ),
+                            ]),
+                            dbc.Row([
+                                html.Label(
+                                    "Trendline",
+                                    style={'font-weight': 'bold'}
+                                ),
+                                dcc.RadioItems(
+                                    id='model_graph_custom_variable_trendline',
+                                    options=[
+                                        {'label': 'None', 'value': 'None'},
+                                        {'label': 'Regression Line', 'value': 'ols'},
+                                        {'label': 'Lowess', 'value': 'lowess'},
+                                    ],
+                                    value='lowess',
+                                    labelStyle={'display': 'flex'}
+                                ),
+                            ])
+                        ],
+                        width=2
+                    ),
+                    dbc.Col(
+                        children=[
+                            dcc.Loading(dcc.Graph(id='model_graph_custom')),
+                        ],
+                        width=10
+                    ),
+                ]
+            ),
+            dash_dangerously_set_inner_html.DangerouslySetInnerHTML(parser.to_formatted_dataframe().render())
+        ]
+
+
+    return html.Div(children)
+
+
+
+@app.callback(
+    Output('model_graph_custom', 'figure'),
+    Input('model_graph_custom_variable_x', 'value'),
+    Input('model_graph_custom_variable_color', 'value'),
+    Input('model_graph_custom_variable_size', 'value'),
+    Input('model_graph_custom_variable_trendline', 'value'),
+    
+    State('url', 'pathname'),
+    State('model_tabs', 'value'),
+)
+def update_model_graph_custom(x_variable, color_variable, size_variable, trend_line, path_name, model_tabs_value):
+    path_name = urllib.parse.unquote(path_name)
+    paths = path_name.split('/')
+    paths.remove('')
+    current_project = paths[0]
+    current_model = paths[1]
+
+    CURRENT_PROJECT_DIRECTORY = os.path.join(PROJECTS_DIRECTORY, current_project)
+    CURRENT_MODEL_DIRECTORY = CURRENT_PROJECT_DIRECTORY + '/' + current_model
+
+
+    parser = hlp.sklearn_eval.SearchCVParser.from_yaml_file(yaml_file_name = os.path.join(CURRENT_PROJECT_DIRECTORY, current_model, model_tabs_value + '.yaml'))
+    score_df = parser.to_dataframe(sort_by_score=False)
+    score_df['labels'] = [x.replace('{', '<br>').replace(', ', '<br>').replace('}', '')
+                  for x in parser.iteration_labels(order_from_best_to_worst=False)]
+
+    ##scatter_trend_line = 'ols'
+    #scatter_trend_line = 'lowess'
+    if trend_line == 'None':
+        trend_line = None
+    fig2 = px.scatter(
+        data_frame=score_df,
+        x=x_variable,
+        y=parser.primary_score_name + " Mean",
+        size=size_variable,
+        color=color_variable,
+        title='max_features',
+        trendline=trend_line,
+        #labels={'x': 'Iteration'},
+        custom_data=['labels'],
+        height=600,
+        #width=600*hlp.plot.GOLDEN_RATIO
+    )
+
+    fig2.update_traces(
+        hovertemplate="<br>".join([
+            "Iteration: %{x}",
+            "roc_auc Mean: %{y}",
+            "<br>Parameters: %{customdata[0]}",
+        ])
+    )
+
+    return fig2
+
+
+
+
+
 if __name__ == '__main__':
     app.run_server(debug=True, port=3000)
+
+# from dash import Dash
+# import time
+# import dash_core_components as dcc
+# import dash_html_components as html
+# from dash.dependencies import Input, Output
+
+
+# app = Dash(__name__)
+# app.layout = html.Div(
+#     children=[
+#         html.H3("Edit text input to see loading state"),
+#         dcc.Input(id="loading-input-1", value="Input triggers local spinner"),
+#         dcc.Loading(
+#             id="loading-1", type="default", children=html.Div(id="loading-output-1")
+#         ),
+#     ],
+# )
+
+
+# @app.callback(
+#     Output("loading-output-1", "children"),
+#     Input("loading-input-1", "value"),
+#     prevent_initial_call=True,
+# )
+# def input_triggers_spinner(value):
+#     time.sleep(2)
+#     return value
+
+
+# if __name__ == "__main__":
+#     app.run_server(debug=True, port=3000)
