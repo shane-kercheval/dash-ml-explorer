@@ -342,12 +342,12 @@ def display_output(value, path_name):
             data_frame=score_df,
             x=np.arange(0, parser.number_of_iterations),
             y=parser.primary_score_name + " Mean",
-            title='Average Cross-Validation Score across all iterations',
+            #title='Bayesian Performance Over Time',
             trendline='lowess',
             labels={'x': 'Iteration'},
             custom_data=['labels'],
             height=600,
-            width=600*hlp.plot.GOLDEN_RATIO
+            #width=600*hlp.plot.GOLDEN_RATIO
         )
         fig.update_traces(
             hovertemplate="<br>".join([
@@ -358,9 +358,28 @@ def display_output(value, path_name):
         )
 
         children = [
-            dcc.Graph(id='asdf', figure=fig),
+            html.Br(),html.Br(),
+            dbc.Row([
+                html.H3("Overview"),
+                html.Br(),html.Br(),
+                dbc.Col(
+                    children=[
+                        html.H6("Bayesian Performance Over Time"),
+                        dcc.Graph(id='bayesian_performance', figure=fig),
+                    ],
+                    width=5
+                ),
+                dbc.Col(
+                    children=[
+                        html.H6("Best Performance Parameters"),
+                        dash_dangerously_set_inner_html.DangerouslySetInnerHTML(parser.to_formatted_dataframe().render())
+                    ],
+                    width=7
+                )
+            ]),
             dbc.Row(
                 children=[
+                    html.H3("Cross-Validation Performance"),
                     dbc.Col(
                         children=[
                             html.Br(),html.Br(),
@@ -423,8 +442,7 @@ def display_output(value, path_name):
                         width=10
                     ),
                 ]
-            ),
-            dash_dangerously_set_inner_html.DangerouslySetInnerHTML(parser.to_formatted_dataframe().render())
+            )
         ]
 
 
@@ -468,7 +486,7 @@ def update_model_graph_custom(x_variable, color_variable, size_variable, trend_l
         y=parser.primary_score_name + " Mean",
         size=size_variable,
         color=color_variable,
-        title='max_features',
+        #title=f'Cross Validation Performance ({parser.primary_score_name})',
         trendline=trend_line,
         #labels={'x': 'Iteration'},
         custom_data=['labels'],
